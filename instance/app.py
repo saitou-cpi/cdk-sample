@@ -20,50 +20,49 @@ class EC2InstanceStack(Stack):
 
         # VPC
         vpc = ec2.Vpc(self, "VPC",
-                                        nat_gateways=0,
-                                        subnet_configuration=[
-                                            ec2.SubnetConfiguration(
-                                                name="public",
-                                                subnet_type=ec2.SubnetType.PUBLIC
-                                                )]
-                                        )
+                      nat_gateways=0,
+                      subnet_configuration=[
+                          ec2.SubnetConfiguration(
+                              name="public",
+                              subnet_type=ec2.SubnetType.PUBLIC
+                              )]
+                        )
         
         # AMI
         amzn_linux = ec2.MachineImage.latest_amazon_linux(
-                                        generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
-                                        edition=ec2.AmazonLinuxEdition.STANDARD,
-                                        virtualization=ec2.AmazonLinuxVirt.HVM,
-                                        storage=ec2.AmazonLinuxStorage.GENERAL_PURPOSE
-                                        )
+            generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+            edition=ec2.AmazonLinuxEdition.STANDARD,
+            virtualization=ec2.AmazonLinuxVirt.HVM,
+            storage=ec2.AmazonLinuxStorage.GENERAL_PURPOSE
+        )
 
         # Instance Role and SSM Managed Policy
         role = iam.Role(self, "InstanceSSM",
-                                        assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"))
+                        assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"))
         
         role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore"))
 
         # Instance
         instance = ec2.Instance(self, "Instance",
-                                        instance_type=ec2.InstanceType("m5.large"),
-                                        machine_image=amzn_linux,
-                                        vpc=vpc,
-                                        role=role
-                                        )
+                                instance_type=ec2.InstanceType("m5.large"),
+                                machine_image=amzn_linux,
+                                vpc=vpc,
+                                role=role
+                                )
         
         # Script in S3 as Asset
         asset = Asset(self, "Asset",
-                                        path=os.path.join(dirname, "configure.sh"))
+                      path=os.path.join(dirname, "configure.sh"))
         local_path = instance.user_data.add_s3_download_command(
-                                        bucket=asset.bucket,
-                                        bucket_key=asset.s3_object_key
-                                        )
+            bucket=asset.bucket,
+            bucket_key=asset.s3_object_key
+        )
 
         # Userdate executes script from S3
         instance.user_data.add_execute_file_command(
-                                        file_path=local_path
-                                        )
+            file_path=local_path
+        )
         asset.grant_read(instance.role)
-
 
 app = App()
 EC2InstanceStack(app, "ec2-instance")
