@@ -138,7 +138,7 @@ class Ec2CloudwatchStack(Stack):
                                             day="1",
                                             month="1-12"
                                             ),
-                                        delete_after=Duration.days(60),
+                                        delete_after=Duration.days(90),
                                         move_to_cold_storage_after=Duration.days(10)
                                     ))
         
